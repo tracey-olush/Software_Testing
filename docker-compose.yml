@@ -1,0 +1,72 @@
+# Local environment for CW2, mirroring what the auto-marker provides.
+#
+#   docker compose up --build
+#
+# Brings up:
+#   - localstack      : S3 + DynamoDB emulation
+#   - aws-init        : one-shot, pre-creates the bucket, the table and both GSIs, then exits
+#   - tariff-service  : the reference tariff service (mglienecke/ilp-tariff-reference-2026)
+#   - app             : the Dispatch Manifest Hub
+#
+# The application never creates the bucket or the table. To run the app from IntelliJ instead, start
+# only the dependencies (docker compose up -d localstack aws-init tariff-service) and run
+# DispatchApplication with TARIFF_SERVICE_URL=http://localhost:8082 and AWS_ENDPOINT=http://localhost:4566.
+
+services:
+  localstack:
+    image: localstack/localstack:3
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3,dynamodb
+      - DEFAULT_REGION=eu-central-1
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:4566/_localstack/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  aws-init:
+    image: amazon/aws-cli:latest
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=eu-central-1
+      - MANIFEST_ARCHIVE_BUCKET=campusshop-dispatch-manifests
+      - SHIPMENT_TABLE=campusshop-shipments
+    entrypoint: ["/bin/sh", "/aws/init.sh"]
+    volumes:
+      - ./aws:/aws:ro
+
+  tariff-service:
+    image: mglienecke/ilp-tariff-reference-2026
+    ports:
+      - "8082:8082"
+    environment:
+      - TARIFF_CATALOG_FILE=/app/catalog/catalog-tariffs.txt
+      # default serves TRF-1..TRF-500. marking serves only TRF-1..TRF-299 and TRF-400..TRF-499, like the
+      # auto-marker, so TRF-350 is unknown:  TARIFF_SERVICE_MODE=marking docker compose up -d
+      - TARIFF_SERVICE_MODE=${TARIFF_SERVICE_MODE:-default}
+
+  app:
+    build: .
+    image: ilp:cw2
+    ports:
+      - "8080:8080"
+    depends_on:
+      aws-init:
+        condition: service_completed_successfully
+      tariff-service:
+        condition: service_started
+    environment:
+      - SERVER_PORT=8080
+      - TARIFF_SERVICE_URL=http://tariff-service:8082
+      - AWS_ENDPOINT=http://localstack:4566
+      - AWS_REGION=eu-central-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - MANIFEST_ARCHIVE_BUCKET=campusshop-dispatch-manifests
+      - SHIPMENT_TABLE=campusshop-shipments

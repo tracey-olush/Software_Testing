@@ -1,0 +1,76 @@
+### CampusShop DataHub — Dispatch Manifest Hub (IntelliJ HTTP Client)
+# Start the stack first: docker compose up --build
+@base = http://localhost:8080
+@carrierId = 9c8b7a65-4d3e-4f21-9a0b-1c2d3e4f5a6b
+
+### Health
+GET {{base}}/actuator/health
+
+### Register a manifest (two parcels, both priced) -> 201
+POST {{base}}/dispatch/manifests
+Content-Type: application/json
+
+{
+  "manifestNo": "4b1d2c3e-5f60-4a71-8b92-a3b4c5d6e7f8",
+  "carrier": { "carrierId": "{{carrierId}}", "name": "Campus Couriers", "contactEmail": "ops@campus-couriers.example" },
+  "dispatchDate": "2026-11-20",
+  "originWarehouse": "EDI-01",
+  "parcels": [
+    { "tariffCode": "TRF-1", "weightKg": 2.5 },
+    { "tariffCode": "TRF-2", "weightKg": 0.8 }
+  ],
+  "carrierInternalNotes": "must be preserved in the archived manifest"
+}
+
+> {% client.global.set("shipmentRef", response.body.shipmentRef); %}
+
+### The registered shipment -> 200
+GET {{base}}/shipments/{{shipmentRef}}
+
+### The archived manifest, byte for byte -> 200
+GET {{base}}/shipments/{{shipmentRef}}/manifest
+
+### All shipments of the carrier, oldest dispatch date first -> 200
+GET {{base}}/carriers/{{carrierId}}/shipments
+
+### Unknown tariff code -> 201, that parcel UNRATED (TRF-999 is outside every catalog)
+POST {{base}}/dispatch/manifests
+Content-Type: application/json
+
+{
+  "manifestNo": "6d5c4b3a-2f1e-4d0c-9b8a-7f6e5d4c3b2a",
+  "carrier": { "carrierId": "{{carrierId}}", "name": "Campus Couriers", "contactEmail": "ops@campus-couriers.example" },
+  "dispatchDate": "2026-11-21",
+  "parcels": [
+    { "tariffCode": "TRF-1", "weightKg": 2.5 },
+    { "tariffCode": "TRF-999", "weightKg": 1.0 }
+  ]
+}
+
+### Same manifestNo again -> 409 DUPLICATE_MANIFEST
+POST {{base}}/dispatch/manifests
+Content-Type: application/json
+
+{
+  "manifestNo": "4b1d2c3e-5f60-4a71-8b92-a3b4c5d6e7f8",
+  "carrier": { "carrierId": "{{carrierId}}", "name": "Campus Couriers", "contactEmail": "ops@campus-couriers.example" },
+  "dispatchDate": "2026-11-20",
+  "parcels": [ { "tariffCode": "TRF-1", "weightKg": 2.5 } ]
+}
+
+### Invalid: weightKg 0 -> 400 VALIDATION_FAILED
+POST {{base}}/dispatch/manifests
+Content-Type: application/json
+
+{
+  "manifestNo": "0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d",
+  "carrier": { "carrierId": "{{carrierId}}", "name": "Campus Couriers", "contactEmail": "ops@campus-couriers.example" },
+  "dispatchDate": "2026-11-20",
+  "parcels": [ { "tariffCode": "TRF-1", "weightKg": 0 } ]
+}
+
+### Delete the shipment and its archived manifest -> 204
+DELETE {{base}}/shipments/{{shipmentRef}}
+
+### After the delete -> 404 SHIPMENT_NOT_FOUND
+GET {{base}}/shipments/{{shipmentRef}}

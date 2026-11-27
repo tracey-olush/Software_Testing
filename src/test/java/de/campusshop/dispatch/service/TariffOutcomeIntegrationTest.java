@@ -41,7 +41,7 @@ public class TariffOutcomeIntegrationTest {
             new CarrierDto("2345te-234r", "Textile Road", "president@textileroad.com"),
             LocalDate.of(2026, 11, 20), "Big Warehouse",
             List.of(new ParcelDto("TRF-1", new BigDecimal("2.5")),
-                    new ParcelDto("TRF-2", new BigDecimal("0.8"))));
+                    new ParcelDto("TRF-7", new BigDecimal("0.8"))));
 
     private final DispatchManifest manifest1 = new DispatchManifest("1345-234r53",
             new CarrierDto("2345te-234r", "Textile Road", "president@textileroad.com"),
@@ -162,7 +162,13 @@ public class TariffOutcomeIntegrationTest {
                         {"tariffCode": "TRF-7", "serviceName": "Standard", "baseFee": 4.50, "pricePerKg": 1.20, "fuelSurchargeRate": 0.10, "transitDays": 3}
                         """, MediaType.APPLICATION_JSON));
 
-        ShipmentRecord record = service.register(manifest, raw);
+        DispatchManifest manifest3 = new DispatchManifest("1345-234r53",
+                new CarrierDto("2345te-234r", "Textile Road", "president@textileroad.com"),
+                LocalDate.of(2026, 11, 20), "Big Warehouse",
+                List.of(new ParcelDto("TRF-1", new BigDecimal("2.5")),
+                        new ParcelDto("TRF-7", new BigDecimal("2.5"))));
+
+        ShipmentRecord record = service.register(manifest3, raw);
 
         assertThat(record.parcels().get(0).rating()).isEqualTo(Rating.UNRATED);
         assertThat(record.parcels().get(1).rating()).isEqualTo(Rating.RATED);

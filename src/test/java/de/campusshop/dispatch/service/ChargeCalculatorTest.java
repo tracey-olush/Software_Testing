@@ -31,5 +31,21 @@ public class ChargeCalculatorTest {
 
         assertThat(calculator.charge(tariff2, new BigDecimal("1.5"))).isEqualByComparingTo("1.02");
         assertThat(calculator.charge(tariff2, new BigDecimal("1.4"))).isEqualByComparingTo("1.01");
+        assertThat(calculator.charge(tariff2, new BigDecimal("0.001"))).isEqualByComparingTo("1.00");
     }
+
+    @Test
+    void surchargeAppliesToBaseFeeAndWeightPrice() {
+        Tariff tariff = new Tariff("TRF-7", "Textile Road", new BigDecimal("10"), new BigDecimal("5"), new BigDecimal("0.50"));
+
+        assertThat(calculator.charge(tariff, new BigDecimal("2"))).isEqualByComparingTo("30.00");
+    }
+
+    @Test
+    void hasTwoDecimalPlaces() {
+        Tariff tariff5 = tariff("TRF-1", "", "4.50", "1.20", "0.10");
+
+        assertThat(calculator.charge(tariff5, new BigDecimal("2.5")).scale() == 2).isTrue();
+    }
+
 }

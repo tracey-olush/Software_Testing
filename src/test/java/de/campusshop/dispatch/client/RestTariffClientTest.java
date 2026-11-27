@@ -3,9 +3,12 @@ package de.campusshop.dispatch.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withException;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.util.Optional;
 
 import de.campusshop.dispatch.mapper.ManifestMapper;
@@ -62,4 +65,31 @@ class RestTariffClientTest {
         assertThat(client.findTariff("TRF-1")).isEmpty();
         server.verify();
     }
+
+    @Test
+    void readTimeoutGivesEmpty() {
+        RestClient.Builder builder = RestClient.builder().baseUrl("http://tariffs.test");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        RestTariffClient client = new RestTariffClient(builder.build(), new ManifestMapper());
+
+        server.expect(requestTo("http://tariffs.test/tariffs/TRF-1"))
+                .andRespond(withException(new SocketTimeoutException("Read timed out")));
+
+        assertThat(client.findTariff("TRF-1")).isEmpty();
+        server.verify();
+    }
+
+    @Test
+    void connectionRefusedGivesEmpty() {
+        RestClient.Builder builder = RestClient.builder().baseUrl("http://tariffs.test");
+        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
+        RestTariffClient client = new RestTariffClient(builder.build(), new ManifestMapper());
+
+        server.expect(requestTo("http://tariffs.test/tariffs/TRF-1"))
+                .andRespond(withException(new ConnectException("refused")));
+
+        assertThat(client.findTariff("TRF-1")).isEmpty();
+        server.verify();
+    }
+
 }

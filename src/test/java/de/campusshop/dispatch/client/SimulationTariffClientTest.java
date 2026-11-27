@@ -27,4 +27,18 @@ class SimulationTariffClientTest {
         assertThat(client.findTariff("TRF-501")).isEmpty();
         assertThat(client.findTariff("PKG-1")).isEmpty();
     }
+
+    @Test
+    void badlyFormedCodes() {
+        assertThat(client.findTariff("")).isEmpty();
+        assertThat(client.findTariff("TRF-")).isEmpty();
+        assertThat(client.findTariff("TRF--1")).isEmpty();
+        assertThat(client.findTariff("trf-1")).isEmpty();
+        assertThat(client.findTariff(" TRF-1")).isEmpty();
+        assertThat(client.findTariff("TRF-1 ")).isEmpty();
+        assertThat(client.findTariff("TRF-1.0")).isEmpty();
+        assertThat(client.findTariff("TRF-abc")).isEmpty();
+    }
+
+
 }

@@ -117,4 +117,109 @@ class ShipmentApiIntegrationTest {
                 .content(json)).andExpect(jsonPath("$.errorCode").value("DUPLICATE_MANIFEST"))
                 .andExpect(status().isConflict());
     }
+
+    @Test
+    void truncatedBodyIsAMalformedManifest() throws Exception {
+        String json = """
+                {"manifestNo": "5467v-768h",
+                """;
+
+        mvc.perform(post("/dispatch/manifests").contentType(MediaType.APPLICATION_JSON)
+                        .content(json)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("MALFORMED_MANIFEST"));
+    }
+
+    @Test
+    void rejectedManifestDoesNotReserveItsNumber() throws Exception {
+        String invalid = """
+                {"manifestNo": "54612-24v", "carrier": {"carrierId": "7687-78ed", "name": "Textile Road",
+                "contactEmail": "president@textileroad.com"}, "dispatchDate": "2026-11-20", "originWarehouse": "Big Warehouse",
+                "parcels": []}
+                """;
+        String valid = """
+                {"manifestNo": "54612-24v", "carrier": {"carrierId": "7687-78ed", "name": "Textile Road",
+                "contactEmail": "president@textileroad.com"}, "dispatchDate": "2026-11-20", "originWarehouse": "Big Warehouse",
+                "parcels": [{"tariffCode": "TRF-1", "weightKg": 2.5}]}
+                """;
+
+        mvc.perform(post("/dispatch/manifests").contentType(MediaType.APPLICATION_JSON)
+                .content(invalid)).andExpect(status().isBadRequest());
+        mvc.perform(post("/dispatch/manifests").contentType(MediaType.APPLICATION_JSON)
+                .content(valid)).andExpect(status().isCreated());
+    }
+
+    @Test
+    void secondDeleteIsNotFound() throws Exception {
+        String json = """
+                {"manifestNo": "54612-2g", "carrier": {"carrierId": "7687-78ed", "name": "Textile Road",
+                "contactEmail": "president@textileroad.com"}, "dispatchDate": "2026-11-20", "originWarehouse": "Big Warehouse",
+                "parcels": [{"tariffCode": "TRF-1", "weightKg": 2.5}]}
+                """;
+
+        String response = mvc.perform(post("/dispatch/manifests").contentType(MediaType.APPLICATION_JSON)
+                .content(json)).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        String shipmentRef = new ObjectMapper().readTree(response).get("shipmentRef").asText();
+
+        mvc.perform(delete("/shipments/{ref}", shipmentRef)).andExpect(status().isNoContent());
+        mvc.perform(delete("/shipments/{ref}", shipmentRef)).andExpect(status().isNotFound());
+        mvc.perform(get("/shipments/{ref}/manifest", shipmentRef)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void carrierListIsOldestFirstWhateverTheSubmissionOrder() throws Exception {
+        String middle = """
+                {"manifestNo": "54612-2o", "carrier": {"carrierId": "API-ORDER", "name": "Textile Road",
+                "contactEmail": "president@textileroad.com"}, "dispatchDate": "2026-03-01", "originWarehouse": "Big Warehouse",
+                "parcels": [{"tariffCode": "TRF-1", "weightKg": 2.5}]}
+                """;
+        String oldest = """
+                {"manifestNo": "54612-2p", "carrier": {"carrierId": "API-ORDER", "name": "Textile Road",
+                "contactEmail": "president@textileroad.com"}, "dispatchDate": "2025-01-01", "originWarehouse": "Big Warehouse",
+                "parcels": [{"tariffCode": "TRF-1", "weightKg": 2.5}]}
+                """;
+        String newest = """
+                {"manifestNo": "54612-24rw", "carrier": {"carrierId": "API-ORDER", "name": "Textile Road",
+                "contactEmail": "president@textileroad.com"}, "dispatchDate": "2027-01-01", "originWarehouse": "Big Warehouse",
+                "parcels": [{"tariffCode": "TRF-1", "weightKg": 2.5}]}
+                """;
+
+        mvc.perform(post("/dispatch/manifests").contentType(MediaType.APPLICATION_JSON)
+                .content(middle)).andExpect(status().isCreated());
+        mvc.perform(post("/dispatch/manifests").contentType(MediaType.APPLICATION_JSON)
+                .content(oldest)).andExpect(status().isCreated());
+        mvc.perform(post("/dispatch/manifests").contentType(MediaType.APPLICATION_JSON)
+                .content(newest)).andExpect(status().isCreated());
+
+        mvc.perform(get("/carriers/{carrierId}/shipments", "API-ORDER"))
+                .andExpect(jsonPath("$[0].dispatchDate").value("2025-01-01"))
+                .andExpect(jsonPath("$[1].dispatchDate").value("2026-03-01"))
+                .andExpect(jsonPath("$[2].dispatchDate").value("2027-01-01"));
+    }
+
+    @Test
+    void wrongTypedDispatchDate() throws Exception {
+        String json = """
+                {"manifestNo": "54612-2411e", "carrier": {"carrierId": "7687-78ed", "name": "Textile Road",
+                "contactEmail": "president@textileroad.com"}, "dispatchDate": "tomorrow", "originWarehouse": "Big Warehouse",
+                "parcels": [{"tariffCode": "TRF-1", "weightKg": 2.5}]}
+                """;
+
+        mvc.perform(post("/dispatch/manifests").contentType(MediaType.APPLICATION_JSON)
+                        .content(json)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("VALIDATION_FAILED"))
+                .andExpect(jsonPath("$.violations[0]").value(containsString("dispatchDate")));
+    }
+
+    @Test
+    void wrongContentTypeIs415() throws Exception {
+        String json = """
+                {"manifestNo": "54612-2gd", "carrier": {"carrierId": "7687-78ed", "name": "Textile Road",
+                "contactEmail": "president@textileroad.com"}, "dispatchDate": "2026-11-20", "originWarehouse": "Big Warehouse",
+                "parcels": [{"tariffCode": "TRF-1", "weightKg": 2.5}]}
+                """;
+
+        mvc.perform(post("/dispatch/manifests").contentType(MediaType.TEXT_PLAIN).content(json))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.errorCode").value("REQUEST_REJECTED"));
+    }
 }

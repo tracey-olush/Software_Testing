@@ -73,10 +73,11 @@ of storage operations, allowing the tests to establish whether data has been per
 and verification of dependency interactions help make the internal application behaviour observable during testing.
 
 
-JaCoCo was used to measure code coverage. Its report found a 96% instruction coverage and a 100% branch coverage. These 
-measurements indicate that the tests execute most of the application's recorded instructions and all of its recorded 
-conditional branches. JaCoCo was only used as a supporting instrument for evaluating the completeness of the tests as 
-coverage does not determine if output was correct.
+JaCoCo was used separately to measure code coverage by recording which instructions and branches were executed during the 
+testing. Its report found a 96% instruction coverage and a 100% branch coverage. These measurements indicate that the 
+tests execute most of the application's recorded instructions and all of its recorded conditional branches. JaCoCo was 
+only used as a supporting instrument for evaluating the completeness of the tests as coverage does not determine if 
+output was correct.
 
 
 ## 2.4 Evaluate Instrument

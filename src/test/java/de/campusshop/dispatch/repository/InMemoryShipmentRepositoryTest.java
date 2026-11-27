@@ -2,7 +2,6 @@ package de.campusshop.dispatch.repository;
 
 import de.campusshop.dispatch.model.ShipmentItem;
 import de.campusshop.dispatch.model.ShipmentState;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

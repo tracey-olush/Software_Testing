@@ -1,4 +1,5 @@
 package de.campusshop.dispatch.config;
+import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import de.campusshop.dispatch.client.RestTariffClient;
@@ -88,7 +89,7 @@ public class TariffTimeoutTest {
 
     @Test
     void droppedConnectionGivesEmpty() {
-        server.createContext("/tariffs/", exchange -> exchange.close());
+        server.createContext("/tariffs/", HttpExchange::close);
 
         assertThat(client().findTariff("TRF-1")).isEmpty();
     }

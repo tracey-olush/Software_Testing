@@ -2,7 +2,6 @@ package de.campusshop.dispatch.service;
 
 import de.campusshop.dispatch.model.Tariff;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.services.s3.endpoints.internal.Value;
 
 import java.math.BigDecimal;
 

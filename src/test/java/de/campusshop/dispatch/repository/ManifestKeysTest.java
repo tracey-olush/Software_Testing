@@ -8,6 +8,6 @@ class ManifestKeysTest {
 
     @Test
     void keyContainsTheCarrierIdAndShipmentRef() {
-        assertThat(ManifestKeys.keyFor("C-1", "S-1")).isEqualTo("manifests/C-1/S-1.json");
+        assertThat(ManifestKeys.keyFor("wyu-7248", "tfg-234")).isEqualTo("manifests/wyu-7248/tfg-234.json");
     }
 }

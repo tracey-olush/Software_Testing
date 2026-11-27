@@ -27,7 +27,7 @@ public class ManifestReaderTest {
         assertThat(manifest.manifestNo()).isEqualTo("1345-234r53");
         assertThat(manifest.carrier().carrierId()).isEqualTo("2345te-234r");
         assertThat(manifest.parcels()).hasSize(1);
-        assertThat(manifest.parcels().get(0).weightKg()).isEqualByComparingTo("2.5");
+        assertThat(manifest.parcels().getFirst().weightKg()).isEqualByComparingTo("2.5");
     }
 
     @Test

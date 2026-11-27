@@ -68,7 +68,7 @@ public class TariffOutcomeIntegrationTest {
 
         ShipmentRecord record = service.register(manifest1, raw);
 
-        assertThat(record.parcels().get(0).rating()).isEqualTo(Rating.RATED);
+        assertThat(record.parcels().getFirst().rating()).isEqualTo(Rating.RATED);
         assertThat(record.totalCharge()).isEqualByComparingTo("8.25");
         assertThat(shipments.get(record.shipmentRef())).isPresent();
         assertThat(archive.fetch(record.manifestKey())).isPresent();
@@ -82,7 +82,7 @@ public class TariffOutcomeIntegrationTest {
 
         ShipmentRecord record = service.register(manifest1, raw);
 
-        assertThat(record.parcels().get(0).rating()).isEqualTo(Rating.UNRATED);
+        assertThat(record.parcels().getFirst().rating()).isEqualTo(Rating.UNRATED);
         assertThat(record.totalCharge()).isEqualByComparingTo("0");
         assertThat(shipments.get(record.shipmentRef())).isPresent();
         assertThat(archive.fetch(record.manifestKey())).isPresent();
@@ -96,7 +96,7 @@ public class TariffOutcomeIntegrationTest {
 
         ShipmentRecord record = service.register(manifest1, raw);
 
-        assertThat(record.parcels().get(0).rating()).isEqualTo(Rating.UNRATED);
+        assertThat(record.parcels().getFirst().rating()).isEqualTo(Rating.UNRATED);
         assertThat(record.totalCharge()).isEqualByComparingTo("0");
         assertThat(shipments.get(record.shipmentRef())).isPresent();
         assertThat(archive.fetch(record.manifestKey())).isPresent();
@@ -110,7 +110,7 @@ public class TariffOutcomeIntegrationTest {
 
         ShipmentRecord record = service.register(manifest1, raw);
 
-        assertThat(record.parcels().get(0).rating()).isEqualTo(Rating.UNRATED);
+        assertThat(record.parcels().getFirst().rating()).isEqualTo(Rating.UNRATED);
         assertThat(record.totalCharge()).isEqualByComparingTo("0");
         assertThat(shipments.get(record.shipmentRef())).isPresent();
         assertThat(archive.fetch(record.manifestKey())).isPresent();
@@ -125,7 +125,7 @@ public class TariffOutcomeIntegrationTest {
 
         ShipmentRecord record = service.register(manifest1, raw);
 
-        assertThat(record.parcels().get(0).rating()).isEqualTo(Rating.UNRATED);
+        assertThat(record.parcels().getFirst().rating()).isEqualTo(Rating.UNRATED);
         assertThat(record.totalCharge()).isEqualByComparingTo("0");
         assertThat(shipments.get(record.shipmentRef())).isPresent();
         assertThat(archive.fetch(record.manifestKey())).isPresent();

@@ -53,10 +53,10 @@ class DynamoShipmentRepositoryTest {
         repo = new DynamoShipmentRepository(dynamo, properties);
     }
 
-    private static ShipmentItem item(String ref, BigDecimal totalCharge) {
-        return new ShipmentItem(ref, "KW-53", "HG-Y7", LocalDate.of(2026, 11, 20),
+    private static ShipmentItem item(BigDecimal totalCharge) {
+        return new ShipmentItem("hb-23d", "KW-53", "HG-Y7", LocalDate.of(2026, 11, 20),
                 Instant.parse("2026-11-20T09:15:00Z"), ShipmentState.REGISTERED, 2,
-                totalCharge, "manifests/" + ref + ".json");
+                totalCharge, "manifests/" + "hb-23d" + ".json");
     }
 
     private static Map<String, AttributeValue> dynamoItem(String ref) {
@@ -74,7 +74,7 @@ class DynamoShipmentRepositoryTest {
 
     @Test
     void putWritesEveryAttributeToTheTable() {
-        repo.put(item("hb-23d", new BigDecimal("16.99")));
+        repo.put(item(new BigDecimal("16.99")));
 
         ArgumentCaptor<PutItemRequest> captor = ArgumentCaptor.forClass(PutItemRequest.class);
         verify(dynamo).putItem(captor.capture());
@@ -97,7 +97,7 @@ class DynamoShipmentRepositoryTest {
     @Test
     void putWritesTotalChargeAsAPlainNumber() {
         // toPlainString: 1E+1 must be sent as 10, not in scientific notation
-        repo.put(item("hb-23d", new BigDecimal("1E+1")));
+        repo.put(item(new BigDecimal("1E+1")));
 
         ArgumentCaptor<PutItemRequest> captor = ArgumentCaptor.forClass(PutItemRequest.class);
         verify(dynamo).putItem(captor.capture());
@@ -112,7 +112,7 @@ class DynamoShipmentRepositoryTest {
 
         var found = repo.get("hb-23d");
 
-        assertThat(found).contains(item("hb-23d", new BigDecimal("16.99")));
+        assertThat(found).contains(item(new BigDecimal("16.99")));
 
         ArgumentCaptor<GetItemRequest> captor = ArgumentCaptor.forClass(GetItemRequest.class);
         verify(dynamo).getItem(captor.capture());
@@ -157,6 +157,7 @@ class DynamoShipmentRepositoryTest {
                 .lastEvaluatedKey(Map.of("shipmentRef", AttributeValue.fromS("hb-23d")))
                 .build();
         QueryResponse page2 = QueryResponse.builder().items(dynamoItem("ytgt-6")).build();
+
         when(dynamo.queryPaginator(any(QueryRequest.class)))
                 .thenAnswer(invocation -> new QueryIterable(dynamo, invocation.getArgument(0)));
         when(dynamo.query(any(QueryRequest.class))).thenReturn(page1, page2);
